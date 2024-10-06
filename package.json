@@ -1,0 +1,18 @@
+{
+  "name": "electron-server",
+  "version": "1.0.0",
+  "description": "Electron app to manage Apache, PHP, MariaDB and phpMyAdmin",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "download": "node bin/download-services.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "axios": "^1.7.7",
+    "electron": "^25.0.0",
+    "unzipper": "^0.10.11"
+  },
+  "author": "Auteur",
+  "license": "MIT"
+}
