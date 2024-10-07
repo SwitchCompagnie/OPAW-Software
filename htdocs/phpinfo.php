@@ -29,7 +29,7 @@
       <h1 class="text-5xl font-bold text-center mb-4">Informations PHP</h1>
 
       <div class="bg-gray-800 p-4 rounded shadow-lg">
-        <?php ob_start(); phpinfo(); $phpinfo = ob_get_clean(); echo $phpinfo; ?>
+        <?php phpinfo(); ?>
       </div>
     </main>
 

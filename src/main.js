@@ -16,7 +16,9 @@ function createWindow() {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
             enableRemoteModule: false,
-        }
+        },
+        autoHideMenuBar: true,
+        icon: 'src/images/favicon.ico'
     });
 
     mainWindow.loadFile('src/index.html');
