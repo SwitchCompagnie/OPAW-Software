@@ -70,20 +70,26 @@ Alias /phpmyadmin "${phpMyAdminPath}"
 
     let phpIni = fs.readFileSync(phpIniPath, 'utf-8');
 
-    // Update extensions
     const phpExtensions = ['mysqli', 'zip'];
+    let occurrenceCounter = 0;
+
     phpExtensions.forEach(ext => {
-        const extPattern = new RegExp(`;?\\s*extension=${ext}`, 'i');
-        phpIni = phpIni.replace(extPattern, `extension=${ext}`);
+        const extPattern = new RegExp(`;?\\s*extension=${ext}`, 'gi');
+        phpIni = phpIni.replace(extPattern, (match) => {
+            occurrenceCounter++;
+            return occurrenceCounter === 2 ? `extension=${ext}` : match;
+        });
     });
 
-    // Handle extension_dir
-    const extensionDirPattern = /;\s*extension_dir\s*=\s*"(.*?)"/;
-    if (extensionDirPattern.test(phpIni)) {
-        // If there's a commented line, replace it
-        phpIni = phpIni.replace(extensionDirPattern, 'extension_dir = "ext"');
-    } else if (!/extension_dir\s*=\s*"ext"/.test(phpIni)) {
-        // If no line exists, append it
+    occurrenceCounter = 0; 
+    const extensionDirPattern = /\s*extension_dir\s*=\s*"(.*?)"/g;
+
+    phpIni = phpIni.replace(extensionDirPattern, (match) => {
+        occurrenceCounter++;
+        return occurrenceCounter === 2 ? `extension_dir = "ext"` : match;
+    });
+
+    if (!/extension_dir\s*=\s*"ext"/.test(phpIni)) {
         phpIni += `\n; On windows:\nextension_dir = "ext"`;
     }
 
@@ -106,7 +112,6 @@ function initializeMariaDB() {
     const files = fs.readdirSync(dataPath);
     if (files.length === 0) {
         console.log("Initialisation de MariaDB...");
-        // execSync(`"${mariaDbBinPath}" --initialize-insecure --datadir="${dataPath}"`); // Uncomment this when running with admin permissions ;)
         console.log("MariaDB initialisé avec succès.");
     } else {
         console.log("Le dossier de données est déjà initialisé.");

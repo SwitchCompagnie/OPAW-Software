@@ -1,15 +1,32 @@
-document.getElementById('start-apache').addEventListener('click', () => {
-    window.electron.send('start-apache');
+let apacheRunning = false;
+let mariadbRunning = false;
+
+const updateButtons = () => {
+    const apacheButton = document.getElementById('toggle-apache');
+    const mariadbButton = document.getElementById('toggle-mariadb');
+    
+    apacheButton.textContent = apacheRunning ? 'Arrêter Apache' : 'Démarrer Apache';
+    mariadbButton.textContent = mariadbRunning ? 'Arrêter MariaDB' : 'Démarrer MariaDB';
+};
+
+document.getElementById('toggle-apache').addEventListener('click', () => {
+    if (apacheRunning) {
+        window.electron.send('stop-apache');
+    } else {
+        window.electron.send('start-apache');
+    }
+    apacheRunning = !apacheRunning;
+    updateButtons();
 });
 
-document.getElementById('stop-apache').addEventListener('click', () => {
-    window.electron.send('stop-apache');
+document.getElementById('toggle-mariadb').addEventListener('click', () => {
+    if (mariadbRunning) {
+        window.electron.send('stop-mariadb');
+    } else {
+        window.electron.send('start-mariadb');
+    }
+    mariadbRunning = !mariadbRunning;
+    updateButtons();
 });
 
-document.getElementById('start-mariadb').addEventListener('click', () => {
-    window.electron.send('start-mariadb');
-});
-
-document.getElementById('stop-mariadb').addEventListener('click', () => {
-    window.electron.send('stop-mariadb');
-});
+updateButtons();

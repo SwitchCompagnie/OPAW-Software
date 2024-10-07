@@ -1,15 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const { exec } = require('child_process');
 const downloadServices = require('../bin/download-services').downloadServices;
 
 let mainWindow;
-let apacheProcess = null;
-let mariadbProcess = null;
+let installWindow;
 
-function createWindow() {
-    mainWindow = new BrowserWindow({
+function createWindow(file, onCloseCallback) {
+    let win = new BrowserWindow({
         width: 800,
         height: 600,
         webPreferences: {
@@ -21,14 +20,16 @@ function createWindow() {
         icon: 'src/images/favicon.ico'
     });
 
-    mainWindow.loadFile('src/index.html');
+    win.loadFile(file);
 
-    mainWindow.on('closed', function () {
-        mainWindow = null;
+    win.on('closed', function () {
+        if (onCloseCallback) onCloseCallback();
+        win = null;
     });
+
+    return win;
 }
 
-// Vérifie si tous les services sont déjà téléchargés
 function areServicesDownloaded() {
     const baseDir = path.join(__dirname, '..');
     return fs.existsSync(path.join(baseDir, 'apache')) &&
@@ -37,66 +38,24 @@ function areServicesDownloaded() {
            fs.existsSync(path.join(baseDir, 'phpmyadmin'));
 }
 
-// Démarre les téléchargements si nécessaire
 async function checkAndDownloadServices() {
     if (!areServicesDownloaded()) {
         await downloadServices();
     }
 }
 
-// Démarre Apache
-function startApache() {
-    const apachePath = path.join(__dirname, '..', 'apache', 'bin', 'httpd.exe');
-    apacheProcess = spawn(apachePath);
-    apacheProcess.stdout.on('data', (data) => {
-        console.log(`Apache: ${data}`);
-    });
-    apacheProcess.stderr.on('data', (data) => {
-        console.error(`Erreur Apache: ${data}`);
-    });
-}
-
-// Arrête Apache
-function stopApache() {
-    if (apacheProcess) {
-        apacheProcess.kill();
-        apacheProcess = null;
-    }
-}
-
-// Démarre MariaDB
-function startMariaDB() {
-    const mariadbPath = path.join(__dirname, '..', 'mariadb', 'bin', 'mysqld.exe');
-    mariadbProcess = spawn(mariadbPath, ['--console']);
-    mariadbProcess.stdout.on('data', (data) => {
-        console.log(`MariaDB: ${data}`);
-    });
-    mariadbProcess.stderr.on('data', (data) => {
-        console.error(`Erreur MariaDB: ${data}`);
-    });
-}
-
-// Arrête MariaDB
-function stopMariaDB() {
-    if (mariadbProcess) {
-        mariadbProcess.kill();
-        mariadbProcess = null;
-    }
-}
-
-// Écoute les événements IPC
-ipcMain.on('start-apache', startApache);
-ipcMain.on('stop-apache', stopApache);
-ipcMain.on('start-mariadb', startMariaDB);
-ipcMain.on('stop-mariadb', stopMariaDB);
-
-// Application prête
 app.on('ready', async () => {
+    installWindow = createWindow('src/install.html');
+
     await checkAndDownloadServices();
-    createWindow();
+
+    if (installWindow) {
+        installWindow.close();
+    }
+
+    mainWindow = createWindow('src/index.html');
 });
 
-// Quitter quand toutes les fenêtres sont fermées
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {
         app.quit();
@@ -105,6 +64,81 @@ app.on('window-all-closed', function () {
 
 app.on('activate', function () {
     if (mainWindow === null) {
-        createWindow();
+        mainWindow = createWindow('src/index.html');
     }
+});
+
+app.on('before-quit', (event) => {
+    console.log('Fermeture de l\'application. Arrêt des services...');
+    stopApache();
+    stopMariaDB();
+});
+
+function stopApache() {
+    const apachePath = path.join(__dirname, '..', 'apache', 'bin', 'httpd.exe');
+    exec(`taskkill /F /IM httpd.exe`, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors de l'arrêt d'Apache: ${error.message}`);
+            return;
+        }
+        console.log(`Apache arrêté: ${stdout}`);
+    });
+}
+
+function stopMariaDB() {
+    const mariadbPath = path.join(__dirname, '..', 'mariadb', 'bin', 'mysqladmin.exe');
+    exec(`"${mariadbPath}" -u root -p shutdown`, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors de l'arrêt de MariaDB: ${error.message}`);
+            return;
+        }
+        console.log(`MariaDB arrêté: ${stdout}`);
+    });
+}
+
+ipcMain.on('start-apache', (event) => {
+    console.log('Démarrage d\'Apache...');
+    const apachePath = path.join(__dirname, '..', 'apache', 'bin', 'httpd.exe');
+
+    exec(`"${apachePath}"`, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors du démarrage d'Apache: ${error.message}`);
+            event.reply('service-status', 'apache', 'error', `Erreur lors du démarrage d'Apache: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`Erreur d'Apache: ${stderr}`);
+            event.reply('service-status', 'apache', 'error', `Erreur d'Apache: ${stderr}`);
+            return;
+        }
+        console.log(`Apache démarré: ${stdout}`);
+        event.reply('service-status', 'apache', 'running');
+    });
+});
+
+ipcMain.on('stop-apache', (event) => {
+    console.log('Arrêt d\'Apache...');
+    stopApache();
+    event.reply('service-status', 'apache', 'stopped');
+});
+
+ipcMain.on('start-mariadb', (event) => {
+    console.log('Démarrage de MariaDB...');
+    const mariadbPath = path.join(__dirname, '..', 'mariadb', 'bin', 'mysqld.exe');
+
+    exec(`"${mariadbPath}"`, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors du démarrage de MariaDB: ${error.message}`);
+            event.reply('service-status', 'mariadb', 'error', `Erreur lors du démarrage de MariaDB: ${error.message}`);
+            return;
+        }
+        console.log(`MariaDB démarré: ${stdout}`);
+        event.reply('service-status', 'mariadb', 'running');
+    });
+});
+
+ipcMain.on('stop-mariadb', (event) => {
+    console.log('Arrêt de MariaDB...');
+    stopMariaDB();
+    event.reply('service-status', 'mariadb', 'stopped');
 });
