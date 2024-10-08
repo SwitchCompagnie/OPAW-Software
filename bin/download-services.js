@@ -6,7 +6,6 @@ const AdmZip = require('adm-zip');
 
 const baseDir = path.join(__dirname, '..');
 
-// Fonction pour télécharger un fichier
 async function downloadFile(url, dest) {
     const response = await axios({
         url,
@@ -27,13 +26,11 @@ async function downloadFile(url, dest) {
     });
 }
 
-// Fonction pour extraire un fichier ZIP
 function extractZip(source, target) {
     const zip = new AdmZip(source);
     zip.extractAllTo(target, true);
 }
 
-// Fonction pour déplacer le contenu d'un répertoire
 function moveContent(sourceDir, targetDir) {
     if (fs.existsSync(sourceDir)) {
         const items = fs.readdirSync(sourceDir);
@@ -50,7 +47,6 @@ function moveContent(sourceDir, targetDir) {
     }
 }
 
-// Fonction pour configurer Apache avec PHP
 function configureApache() {
     const configureApacheScript = path.join(__dirname, 'configure-apache.js');
     exec(`node ${configureApacheScript}`, (error, stdout) => {
@@ -60,7 +56,6 @@ function configureApache() {
     });
 }
 
-// Télécharger Apache, PHP, MariaDB et phpMyAdmin
 async function downloadServices() {
     const apacheUrl = 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-240904-win64-VS17.zip';
     const phpUrl = 'https://windows.php.net/downloads/releases/php-8.2.24-Win32-vs16-x64.zip';

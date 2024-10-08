@@ -77,7 +77,7 @@ Alias /phpmyadmin "${phpMyAdminPath}"
         const extPattern = new RegExp(`;?\\s*extension=${ext}`, 'gi');
         phpIni = phpIni.replace(extPattern, (match) => {
             occurrenceCounter++;
-            return occurrenceCounter === 2 ? `extension=${ext}` : match;
+        return occurrenceCounter === 2 ? `extension=${ext}` : match;
         });
     });
 
