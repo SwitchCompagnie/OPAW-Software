@@ -48,7 +48,7 @@ function moveContent(sourceDir, targetDir) {
 }
 
 function configureApache() {
-    const configureApacheScript = path.join(__dirname, 'configure-apache.js');
+    const configureApacheScript = path.join(__dirname, 'configure-services.js');
     exec(`node ${configureApacheScript}`, (error, stdout) => {
         if (error) {
             console.error(`Erreur lors de la configuration d'Apache: ${error}`);
