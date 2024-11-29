@@ -58,8 +58,8 @@ function configureApache() {
 
 async function downloadServices() {
     const apacheUrl = 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-240904-win64-VS17.zip';
-    const phpUrl = 'https://windows.php.net/downloads/releases/php-8.2.24-Win32-vs16-x64.zip';
-    const mariadbUrl = 'https://archive.mariadb.org/mariadb-11.5.2/winx64-packages/mariadb-11.5.2-winx64.zip';
+    const phpUrl = 'https://windows.php.net/downloads/releases/php-8.3.14-Win32-vs16-x64.zip';
+    const mariadbUrl = 'https://archive.mariadb.org/mariadb-11.7.1/winx64-packages/mariadb-11.7.1-winx64.zip';
     const phpmyadminUrl = 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip';
 
     try {
