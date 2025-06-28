@@ -1,6 +1,6 @@
 {
-  "name": "electron-server",
-  "version": "1.0.0",
+  "name": "opaw-server",
+  "version": "1.0.2",
   "description": "Electron app to manage Apache, PHP, MariaDB and phpMyAdmin",
   "main": "src/main.js",
   "scripts": {

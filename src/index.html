@@ -8,36 +8,55 @@
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="css/app.css" />
 </head>
-<body class="bg-gray-900 text-white flex flex-col min-h-screen">
-    <header class="fixed top-0 left-0 w-full bg-gray-800 bg-opacity-75 p-4 shadow-lg z-10">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
+<body class="bg-gray-950 text-gray-200 flex flex-col min-h-screen font-sans">
+    <header class="fixed top-0 left-0 w-full bg-gray-900 border-b border-gray-600 p-4 shadow-xl z-10">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-4">
-                <img src="images/logo.png" alt="T-Tron Icon" class="h-8 w-8 spin-slow" />
-                <span class="text-xl font-bold">T-Tron</span>
+                <img src="images/logo.png" alt="T-Tron Icon" class="h-10 w-10 animate-spin-slow" />
+                <span class="text-2xl font-semibold text-white">T-Tron</span>
             </div>
-            <div class="text-xl font-bold">OPAW</div>
+            <div class="text-2xl font-semibold text-white">OPAW</div>
             <div class="flex space-x-4">
-                <a href="https://ttron.eu" class="bg-white hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Accueil</a>
+                <a href="http://localhost" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 border border-gray-500">Accueil</a>
             </div>
         </div>
     </header>
-
-    <main class="flex-grow flex flex-col items-center justify-center pt-20">
-        <h1 class="text-3xl font-bold mb-4">Panneau de Contrôle</h1>
-        <div class="mb-4">
-            <button id="toggle-apache" class="bg-white hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Démarrer Apache</button>
-        </div>
-        <div>
-            <button id="toggle-mariadb" class="bg-white hover:bg-gray-300 text-black font-bold py-2 px-4 rounded">Démarrer MariaDB</button>
+    <main class="flex-grow flex flex-col items-center justify-center pt-24 pb-8">
+        <h1 class="text-4xl font-bold text-white mb-8">Panneau de Contrôle</h1>
+        <div class="w-full max-w-3xl bg-gray-900 border border-gray-600 rounded-lg shadow-lg p-6">
+            <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg font-medium text-white">Apache</span>
+                    <span id="apache-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">Checking...</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="toggle-apache" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Démarrer Apache</button>
+                    <button id="restart-apache" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Redémarrer</button>
+                    <button id="logs-apache" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Logs</button>
+                </div>
+            </div>
+            <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <span class="text-lg font-medium text-white">MariaDB</span>
+                    <span id="mariadb-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">Checking...</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="toggle-mariadb" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Démarrer MariaDB</button>
+                    <button id="restart-mariadb" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Redémarrer</button>
+                    <button id="logs-mariadb" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Logs</button>
+                </div>
+            </div>
+            <div class="mt-8">
+                <h2 class="text-xl font-semibold text-white mb-4">Logs des Services</h2>
+                <div id="logs-container" class="bg-gray-800 border border-gray-600 rounded-lg p-4 h-48 overflow-y-auto text-sm text-gray-300"></div>
+            </div>
         </div>
     </main>
-
-    <footer class="w-full bg-gray-800 bg-opacity-75 shadow-lg p-4">
-        <div class="max-w-5xl mx-auto text-center">
-            <p>&copy; SwitchCompagnie 2023-2024</p>
+    <footer class="w-full bg-gray-900 border-t border-gray-600 shadow-lg p-4">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400">© SwitchCompagnie 2023-2025</p>
         </div>
     </footer>
-
     <script src="renderer.js"></script>
 </body>
 </html>

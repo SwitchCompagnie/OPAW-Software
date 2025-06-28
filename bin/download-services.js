@@ -1,104 +1,133 @@
-const { exec } = require('child_process');
 const fs = require('fs');
+const fsPromises = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const AdmZip = require('adm-zip');
+const { exec } = require('child_process');
 
 const baseDir = path.join(__dirname, '..');
+let progress = 0;
+const services = [
+  { name: 'apache', url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.63-250207-win64-VS17.zip', zipName: 'apache.zip', nestedDirPattern: /Apache24/ },
+  { name: 'php', url: 'https://windows.php.net/downloads/releases/php-8.4.8-Win32-vs17-x64.zip', zipName: 'php.zip' },
+  { name: 'mariadb', url: 'https://archive.mariadb.org/mariadb-12.1.0/winx64-packages/mariadb-12.1.0-winx64.zip', zipName: 'mariadb.zip', nestedDirPattern: /mariadb-\d+\.\d+\.\d+-winx64/ },
+  { name: 'phpmyadmin', url: 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip', zipName: 'phpmyadmin.zip', nestedDirPattern: /phpMyAdmin-.+/ }
+];
+const tasksPerService = 3;
+const configSteps = 1;
+const totalSteps = services.length * tasksPerService + configSteps;
 
-async function downloadFile(url, dest) {
-    const response = await axios({
-        url,
-        method: 'GET',
-        responseType: 'stream',
+const sendProgress = (win, message) => {
+  progress = Math.min(progress + 100 / totalSteps, 100);
+  const formattedMessage = message.normalize('NFC');
+  if (win) win.webContents.send('install-progress', progress, formattedMessage);
+};
+
+const sendError = (win, error) => {
+  const formattedError = error.message.normalize('NFC');
+  if (win) win.webContents.send('install-error', formattedError);
+  throw error;
+};
+
+const downloadFile = async (win, url, dest) => {
+  sendProgress(win, `Téléchargement de ${path.basename(url)}...`);
+  const response = await axios({ url, method: 'GET', responseType: 'stream', timeout: 60000 });
+  if (response.status !== 200) throw new Error(`HTTP error: ${response.status}`);
+  const writer = fs.createWriteStream(dest);
+  response.data.pipe(writer);
+  await new Promise((resolve, reject) => {
+    writer.on('finish', () => {
+      sendProgress(win, `Téléchargement de ${path.basename(url)} terminé`);
+      resolve();
     });
+    writer.on('error', reject);
+  });
+};
 
-    if (response.status !== 200) {
-        throw new Error(`Erreur de téléchargement, code de statut: ${response.status}`);
-    }
+const extractZip = (win, source, target) => {
+  sendProgress(win, `Extraction de ${path.basename(source)}...`);
+  const zip = new AdmZip(source);
+  zip.extractAllTo(target, true);
+  sendProgress(win, `Extraction de ${path.basename(source)} terminée`);
+};
 
-    const writer = fs.createWriteStream(dest);
-    response.data.pipe(writer);
+const moveContent = async (win, sourceDir, targetDir) => {
+  if (!(await fsPromises.access(sourceDir).then(() => true).catch(() => false))) {
+    sendProgress(win, `Répertoire source introuvable : ${sourceDir}, saut du déplacement`);
+    return;
+  }
+  const stat = await fsPromises.stat(sourceDir);
+  if (!stat.isDirectory()) {
+    sendProgress(win, `Chemin ${sourceDir} n'est pas un répertoire, saut du déplacement`);
+    return;
+  }
+  sendProgress(win, `Organisation des fichiers dans ${path.basename(targetDir)}...`);
+  for (const item of await fsPromises.readdir(sourceDir)) {
+    await fsPromises.rename(path.join(sourceDir, item), path.join(targetDir, item));
+  }
+  await fsPromises.rm(sourceDir, { recursive: true, force: true });
+  sendProgress(win, `Organisation des fichiers dans ${path.basename(targetDir)} terminée`);
+};
 
-    return new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
-    });
-}
-
-function extractZip(source, target) {
-    const zip = new AdmZip(source);
-    zip.extractAllTo(target, true);
-}
-
-function moveContent(sourceDir, targetDir) {
-    if (fs.existsSync(sourceDir)) {
-        const items = fs.readdirSync(sourceDir);
-
-        items.forEach(item => {
-            const srcPath = path.join(sourceDir, item);
-            const destPath = path.join(targetDir, item);
-            fs.renameSync(srcPath, destPath);
-        });
-
-        fs.rmSync(sourceDir, { recursive: true, force: true });
+const configureAllServices = (win) => new Promise((resolve, reject) => {
+  sendProgress(win, 'Démarrage de la configuration des services...');
+  exec(`node "${path.join(__dirname, 'configure-services.js')}"`, (error) => {
+    if (error) {
+      sendError(win, error);
+      reject(error);
     } else {
-        console.error(`Le répertoire ${sourceDir} n'existe pas.`);
+      sendProgress(win, 'Configuration des services terminée');
+      resolve();
     }
-}
+  });
+});
 
-function configureApache() {
-    const configureApacheScript = path.join(__dirname, 'configure-services.js');
-    exec(`node ${configureApacheScript}`, (error, stdout) => {
-        if (error) {
-            console.error(`Erreur lors de la configuration d'Apache: ${error}`);
+const installService = async (win, { name, url, zipName, nestedDirPattern }) => {
+  const zipPath = path.join(baseDir, zipName);
+  const extractPath = path.join(baseDir, name);
+  await downloadFile(win, url, zipPath);
+  extractZip(win, zipPath, extractPath);
+  await fsPromises.unlink(zipPath);
+  if (nestedDirPattern) {
+    const items = await fsPromises.readdir(extractPath);
+    let nestedDir = null;
+    for (const item of items) {
+      const fullPath = path.join(extractPath, item);
+      try {
+        const stat = await fsPromises.stat(fullPath);
+        if (stat.isDirectory() && nestedDirPattern.test(item)) {
+          nestedDir = fullPath;
+          break;
         }
-    });
-}
-
-async function downloadServices() {
-    const apacheUrl = 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.63-250207-win64-VS17.zip';
-    const phpUrl = 'https://windows.php.net/downloads/releases/php-8.4.8-Win32-vs17-x64.zip';
-    const mariadbUrl = 'https://archive.mariadb.org/mariadb-12.1.0/winx64-packages/mariadb-12.1.0-winx64.zip';
-    const phpmyadminUrl = 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip';
-
-    try {
-        await downloadFile(apacheUrl, path.join(baseDir, 'apache.zip'));
-        await extractZip(path.join(baseDir, 'apache.zip'), path.join(baseDir, 'apache'));
-        fs.unlinkSync(path.join(baseDir, 'apache.zip'));
-
-        const apacheDir = path.join(baseDir, 'apache', 'Apache24');
-        moveContent(apacheDir, path.join(baseDir, 'apache'));
-
-        await downloadFile(phpUrl, path.join(baseDir, 'php.zip'));
-        await extractZip(path.join(baseDir, 'php.zip'), path.join(baseDir, 'php'));
-        fs.unlinkSync(path.join(baseDir, 'php.zip'));
-
-        await downloadFile(mariadbUrl, path.join(baseDir, 'mariadb.zip'));
-        await extractZip(path.join(baseDir, 'mariadb.zip'), path.join(baseDir, 'mariadb'));
-        fs.unlinkSync(path.join(baseDir, 'mariadb.zip'));
-
-        const mariadbSourceDir = fs.readdirSync(path.join(baseDir, 'mariadb'))
-            .map(dir => path.join(baseDir, 'mariadb', dir))
-            .find(dir => fs.statSync(dir).isDirectory() && /mariadb-\d+\.\d+\.\d+-winx64/.test(path.basename(dir)));
-        moveContent(mariadbSourceDir, path.join(baseDir, 'mariadb'));
-
-        await downloadFile(phpmyadminUrl, path.join(baseDir, 'phpmyadmin.zip'));
-        await extractZip(path.join(baseDir, 'phpmyadmin.zip'), path.join(baseDir, 'phpmyadmin'));
-        fs.unlinkSync(path.join(baseDir, 'phpmyadmin.zip'));
-
-        const phpmyadminDir = path.join(baseDir, 'phpmyadmin');
-        const phpmyadminSourceDir = fs.readdirSync(phpmyadminDir)
-            .map(dir => path.join(phpmyadminDir, dir))
-            .find(dir => fs.statSync(dir).isDirectory() && /phpMyAdmin-.+/.test(path.basename(dir)));
-        moveContent(phpmyadminSourceDir, phpmyadminDir);
-
-        configureApache();
-
-        console.log('Tous les services ont ete telecharges et configures.');
-    } catch (error) {
-        console.error('Erreur lors du téléchargement des services:', error);
+      } catch (e) {
+        sendProgress(win, `Erreur lors de la vérification de ${fullPath}: ${e.message}`);
+        continue;
+      }
     }
-}
+    if (nestedDir) {
+      sendProgress(win, `Répertoire imbriqué trouvé : ${nestedDir}`);
+      await moveContent(win, nestedDir, extractPath);
+    } else {
+      sendProgress(win, `Aucun répertoire correspondant à ${nestedDirPattern} trouvé dans ${extractPath}, saut du déplacement`);
+      sendProgress(win, `Contenu de ${extractPath}: ${items.join(', ')}`);
+    }
+  }
+};
+
+const downloadServices = async (win) => {
+  try {
+    progress = 0;
+    for (const service of services) {
+      await installService(win, service);
+    }
+    await configureAllServices(win);
+    if (progress < 100) {
+      progress = 100;
+      sendProgress(win, 'Installation terminée avec succès.');
+    }
+  } catch (error) {
+    sendError(win, error);
+  }
+};
 
 module.exports = { downloadServices };

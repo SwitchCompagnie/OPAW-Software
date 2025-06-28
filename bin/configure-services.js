@@ -1,132 +1,125 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
-const { execSync } = require('child_process');
+const { spawn, execSync } = require('child_process');
 
-function configureApacheForPHP() {
-    const basePath = path.join(__dirname, '..');
-    const apacheConfPath = path.join(basePath, 'apache', 'conf', 'httpd.conf');
-    const phpPath = path.join(basePath, 'php');
-    const phpIniPath = path.join(phpPath, 'php.ini');
-    const phpIniDevelopmentPath = path.join(phpPath, 'php.ini-development');
-    const documentRootPath = path.join(basePath, 'htdocs');
-    const srvRootPath = path.join(basePath, 'apache');
-    const phpMyAdminPath = path.join(basePath, 'phpmyadmin');
-    const mariaDbDataPath = path.join(basePath, 'mariadb', 'data');
-    const configSamplePath = path.join(phpMyAdminPath, 'config.sample.inc.php');
-    const configPath = path.join(phpMyAdminPath, 'config.inc.php');
+const baseDir = path.join(__dirname, '..');
 
-    if (!fs.existsSync(apacheConfPath)) {
-        throw new Error("Le fichier de configuration d'Apache n'existe pas.");
-    }
+const grantPermissions = (targetPath) => {
+  const user = process.env.USERNAME;
+  if (!user) throw new Error('Impossible de détecter le nom d’utilisateur Windows.');
+  execSync(`icacls "${targetPath}" /grant "${user}":(OI)(CI)F /T`, { stdio: 'inherit' });
+  execSync(`icacls "${targetPath}" /grant SYSTEM:(OI)(CI)F /T`, { stdio: 'inherit' });
+};
 
-    let apacheConf = fs.readFileSync(apacheConfPath, 'utf-8');
+const setupMariaDB = async () => {
+  const bin = path.join(baseDir, 'mariadb', 'bin');
+  const mysqld = path.join(bin, 'mysqld.exe');
+  const mysql = path.join(bin, 'mysql.exe');
+  const install = path.join(bin, 'mysql_install_db.exe');
+  const data = path.join(baseDir, 'mariadb', 'data');
 
-    apacheConf = apacheConf
-        .replace(/Define SRVROOT ".*?"/, `Define SRVROOT "${srvRootPath}"`)
-        .replace(/ServerRoot ".*?"/, `ServerRoot "${srvRootPath}"`)
-        .replace(/DocumentRoot ".*?"/, `DocumentRoot "${documentRootPath}"`)
-        .replace(/#\s*LoadModule rewrite_module/, 'LoadModule rewrite_module')
-        .replace(/#ServerName www\.example\.com:80/, 'ServerName localhost:80');
+  if (await fs.access(data).then(() => true).catch(() => false)) {
+    await fs.rm(data, { recursive: true, force: true });
+  }
+  await fs.mkdir(data, { recursive: true });
+  grantPermissions(data);
 
-    const newDirectoryConfig = `
-<Directory "${documentRootPath}">
+  execSync(`"${install}" --datadir="${data}"`, { stdio: 'inherit' });
+
+  const server = spawn(mysqld, ['--console', `--datadir=${data}`, '--skip-grant-tables'], { stdio: 'pipe', detached: true });
+  server.unref();
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+  try {
+    execSync(`"${mysql}" -u root -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY '225874120022587412';"`, { stdio: 'inherit' });
+  } finally {
+    server.kill('SIGTERM');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+};
+
+const configureApacheAndPHP = async () => {
+  const apacheConf = path.join(baseDir, 'apache', 'conf', 'httpd.conf');
+  const phpPath = path.join(baseDir, 'php');
+  const htdocs = path.join(baseDir, 'htdocs');
+  const srvRoot = path.join(baseDir, 'apache');
+  const phpMyAdmin = path.join(baseDir, 'phpmyadmin');
+  const sessionPath = path.join(baseDir, 'tmp');
+  const phpIni = path.join(phpPath, 'php.ini');
+  const phpIniDev = path.join(phpPath, 'php.ini-development');
+
+  let conf = (await fs.readFile(apacheConf, 'utf-8'))
+    .replace(/Define SRVROOT ".*?"/, `Define SRVROOT "${srvRoot.replace(/\\/g, '/')}"`)
+    .replace(/ServerRoot ".*?"/, `ServerRoot "${srvRoot.replace(/\\/g, '/')}"`)
+    .replace(/DocumentRoot ".*?"/, `DocumentRoot "${htdocs.replace(/\\/g, '/')}"`)
+    .replace(/#?\s*LoadModule rewrite_module/, 'LoadModule rewrite_module')
+    .replace(/#ServerName www\.example\.com:80/, 'ServerName localhost:80')
+    .replace(/<Directory\s+".*?htdocs.*?">[\s\S]*?<\/Directory>/gi, '');
+
+  conf += `
+<Directory "${htdocs.replace(/\\/g, '/')}">
+    Options Indexes FollowSymLinks
     AllowOverride All
     Require all granted
 </Directory>
-`;
+Alias /phpmyadmin "${phpMyAdmin.replace(/\\/g, '/')}"
 
-    if (!apacheConf.includes(`<Directory "${documentRootPath}">`)) {
-        apacheConf += newDirectoryConfig;
-    }
+<Directory "${phpMyAdmin.replace(/\\/g, '/')}">
+    Options Indexes FollowSymLinks
+    AllowOverride All
+    Require all granted
+</Directory>
 
-    if (!apacheConf.includes('LoadModule php_module')) {
-        const phpConfig = `
-LoadModule php_module "${phpPath}/php8apache2_4.dll"
+LoadModule php_module "${phpPath.replace(/\\/g, '/')}/php8apache2_4.dll"
 AddHandler application/x-httpd-php .php
-PHPIniDir "${phpPath}"
+PHPIniDir "${phpPath.replace(/\\/g, '/')}"
 DirectoryIndex index.php index.html
 `;
-        apacheConf += phpConfig;
-    }
 
-    const phpMyAdminConfig = `
-Alias /phpmyadmin "${phpMyAdminPath}"
-<Directory "${phpMyAdminPath}">
-    Options Indexes FollowSymLinks MultiViews
-    AllowOverride All
-    Require all granted
-</Directory>
-`;
+  await fs.writeFile(apacheConf, conf, 'utf-8');
 
-    if (!apacheConf.includes('Alias /phpmyadmin')) {
-        apacheConf += phpMyAdminConfig;
-    }
+  if (!(await fs.access(phpIni).then(() => true).catch(() => false)) && await fs.access(phpIniDev).then(() => true).catch(() => false)) {
+    await fs.copyFile(phpIniDev, phpIni);
+  }
+  if (await fs.access(phpIni).then(() => true).catch(() => false)) {
+    let ini = await fs.readFile(phpIni, 'utf-8');
+    ['zip', 'mbstring', 'curl', 'gd', 'openssl', 'mysqli'].forEach(ext =>
+      ini = ini.replace(new RegExp(`;?\\s*extension=${ext}`, 'gi'), `extension=${ext}`)
+    );
+    ini = ini
+      .replace(/;?extension_dir\s*=\s*"ext"/gi, `extension_dir = "ext"`)
+      .replace(/upload_max_filesize\s*=.*$/gm, 'upload_max_filesize = 128M')
+      .replace(/post_max_size\s*=.*$/gm, 'post_max_size = 128M')
+      .replace(/memory_limit\s*=.*$/gm, 'memory_limit = 256M')
+      .replace(/error_reporting\s*=.*$/gm, 'error_reporting = E_ALL & ~E_DEPRECATED')
+      .replace(/output_buffering\s*=.*$/gm, 'output_buffering = On')
+      .replace(/session\.save_path\s*=.*$/gm, `session.save_path = "${sessionPath.replace(/\\/g, '/')}"`);
+    await fs.writeFile(phpIni, ini, 'utf-8');
+  }
 
-    fs.writeFileSync(apacheConfPath, apacheConf, 'utf-8');
+  if (!(await fs.access(sessionPath).then(() => true).catch(() => false))) {
+    await fs.mkdir(sessionPath, { recursive: true });
+    grantPermissions(sessionPath);
+  }
+};
 
-    if (!fs.existsSync(phpIniPath) && fs.existsSync(phpIniDevelopmentPath)) {
-        fs.copyFileSync(phpIniDevelopmentPath, phpIniPath);
-    }
+const configurePhpMyAdmin = async () => {
+  const pmaPath = path.join(baseDir, 'phpmyadmin');
+  const sample = path.join(pmaPath, 'config.sample.inc.php');
+  const config = path.join(pmaPath, 'config.inc.php');
 
-    let phpIni = fs.readFileSync(phpIniPath, 'utf-8');
+  if (await fs.access(sample).then(() => true).catch(() => false) && !(await fs.access(config).then(() => true).catch(() => false))) {
+    const content = (await fs.readFile(sample, 'utf-8'))
+      .replace(/\$cfg\['blowfish_secret'\] = '';/, `$cfg['blowfish_secret'] = '${require('crypto').randomBytes(32).toString('hex')}';`)
+      .replace(/\$cfg\['Servers'\]\[\$i\]\['host'\] = 'localhost';/, `$cfg['Servers'][$i]['host'] = 'localhost';\n$cfg['Servers'][$i]['user'] = 'root';`);
+    await fs.writeFile(config, content, 'utf-8');
+  }
+};
 
-    const phpExtensions = ['mysqli', 'zip'];
-    let occurrenceCounter = 0;
+const main = async () => {
+  await configureApacheAndPHP();
+  await setupMariaDB();
+  await configurePhpMyAdmin();
+};
 
-    phpExtensions.forEach(ext => {
-        const extPattern = new RegExp(`;?\\s*extension=${ext}`, 'gi');
-        phpIni = phpIni.replace(extPattern, (match) => {
-            occurrenceCounter++;
-        return occurrenceCounter === 2 ? `extension=${ext}` : match;
-        });
-    });
-
-    occurrenceCounter = 0; 
-    const extensionDirPattern = /\s*extension_dir\s*=\s*"(.*?)"/g;
-
-    phpIni = phpIni.replace(extensionDirPattern, (match) => {
-        occurrenceCounter++;
-        return occurrenceCounter === 2 ? `extension_dir = "ext"` : match;
-    });
-
-    if (!/extension_dir\s*=\s*"ext"/.test(phpIni)) {
-        phpIni += `\n; On windows:\nextension_dir = "ext"`;
-    }
-
-    fs.writeFileSync(phpIniPath, phpIni, 'utf-8');
-
-    if (!fs.existsSync(mariaDbDataPath)) {
-        fs.mkdirSync(mariaDbDataPath, { recursive: true });
-        console.log(`Le dossier data a été créé à l'emplacement : ${mariaDbDataPath}`);
-    }
-
-    initializeMariaDB();
-
-    copyPhpMyAdminConfig(configSamplePath, configPath);
-}
-
-function initializeMariaDB() {
-    const mariaDbBinPath = path.join(__dirname, '..', 'mariadb', 'bin', 'mysqld.exe');
-    const dataPath = path.join(__dirname, '..', 'mariadb', 'data');
-
-    const files = fs.readdirSync(dataPath);
-    if (files.length === 0) {
-        console.log("Initialisation de MariaDB...");
-        console.log("MariaDB initialisé avec succès.");
-    } else {
-        console.log("Le dossier de données est déjà initialisé.");
-    }
-}
-
-function copyPhpMyAdminConfig(configSamplePath, configPath) {
-    if (fs.existsSync(configSamplePath) && !fs.existsSync(configPath)) {
-        fs.copyFileSync(configSamplePath, configPath);
-        console.log(`Fichier ${configSamplePath} copié vers ${configPath}`);
-    } else if (fs.existsSync(configPath)) {
-        console.log(`Le fichier ${configPath} existe déjà.`);
-    } else {
-        console.log(`Le fichier ${configSamplePath} est introuvable.`);
-    }
-}
-
-configureApacheForPHP();
+main().catch(err => console.error(`Critical error: ${err.message}`));
