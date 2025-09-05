@@ -19,10 +19,10 @@ const createWindow = (file, options = {}) => {
       enableRemoteModule: false,
     },
     autoHideMenuBar: true,
-    icon: path.join(__dirname, 'src', 'images', 'favicon.ico'),
+    icon: path.join(__dirname, 'images', 'favicon.ico'),
     ...options,
   });
-  win.loadFile(file);
+  win.loadFile(path.join(__dirname, file));
   return win;
 };
 
@@ -33,7 +33,7 @@ const areServicesDownloaded = async () => {
 };
 
 const checkAndDownloadServices = async () => {
-  installWindow = createWindow('src/install.html');
+  installWindow = createWindow('install.html');
   if (!(await areServicesDownloaded())) {
     try {
       await downloadServices(installWindow);
@@ -44,19 +44,16 @@ const checkAndDownloadServices = async () => {
   }
   installWindow.close();
   installWindow = null;
-  mainWindow = createWindow('src/index.html');
+  mainWindow = createWindow('index.html');
 };
 
 app.on('ready', checkAndDownloadServices);
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
 app.on('activate', () => {
-  if (!mainWindow) mainWindow = createWindow('src/index.html');
+  if (!mainWindow) mainWindow = createWindow('index.html');
 });
-
 app.on('before-quit', async () => {
   await Promise.all([stopApache(), stopMariaDB()]);
 });
@@ -107,8 +104,13 @@ const startService = async (service, executable, event) => {
   }
   try {
     const servicePath = path.join(__dirname, '..', service, 'bin', executable);
-    const proc = spawn(`"${servicePath}"`, { shell: true, detached: true, stdio: 'ignore' });
+    const proc = spawn(servicePath, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
     proc.unref();
+
     if (service === 'apache') apacheProcess = proc;
     else mariadbProcess = proc;
 
@@ -117,6 +119,7 @@ const startService = async (service, executable, event) => {
     });
 
     await new Promise(resolve => setTimeout(resolve, 3000));
+
     if (await isProcessRunning(executable)) {
       event.reply('service-status', service, 'running');
     } else {
@@ -157,6 +160,7 @@ ipcMain.on('restart-apache', async (event) => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   await startService('apache', 'httpd.exe', event);
 });
+
 ipcMain.on('get-apache-logs', async (event) => event.reply('service-logs', 'Apache', await getLogs('apache')));
 
 ipcMain.on('start-mariadb', (event) => startService('mariadb', 'mysqld.exe', event));
@@ -166,4 +170,5 @@ ipcMain.on('restart-mariadb', async (event) => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   await startService('mariadb', 'mysqld.exe', event);
 });
+
 ipcMain.on('get-mariadb-logs', async (event) => event.reply('service-logs', 'MariaDB', await getLogs('mariadb')));

@@ -3,24 +3,29 @@ const fsPromises = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const AdmZip = require('adm-zip');
-const { exec } = require('child_process');
-
+const { spawn } = require('child_process');
 const baseDir = path.join(__dirname, '..');
-let progress = 0;
+
 const services = [
-  { name: 'apache', url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.63-250207-win64-VS17.zip', zipName: 'apache.zip', nestedDirPattern: /Apache24/ },
-  { name: 'php', url: 'https://windows.php.net/downloads/releases/php-8.4.8-Win32-vs17-x64.zip', zipName: 'php.zip' },
+  { name: 'apache', url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.65-250724-Win64-VS17.zip', zipName: 'apache.zip', nestedDirPattern: /Apache24/ },
+  { name: 'php', url: 'https://windows.php.net/downloads/releases/php-8.4.12-Win32-vs17-x64.zip', zipName: 'php.zip' },
   { name: 'mariadb', url: 'https://archive.mariadb.org/mariadb-12.1.0/winx64-packages/mariadb-12.1.0-winx64.zip', zipName: 'mariadb.zip', nestedDirPattern: /mariadb-\d+\.\d+\.\d+-winx64/ },
   { name: 'phpmyadmin', url: 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip', zipName: 'phpmyadmin.zip', nestedDirPattern: /phpMyAdmin-.+/ }
 ];
-const tasksPerService = 3;
-const configSteps = 1;
-const totalSteps = services.length * tasksPerService + configSteps;
+
+const totalSteps = services.length * 3 + 2;
+let progress = 0;
+let finalMessageSent = false;
 
 const sendProgress = (win, message) => {
-  progress = Math.min(progress + 100 / totalSteps, 100);
   const formattedMessage = message.normalize('NFC');
-  if (win) win.webContents.send('install-progress', progress, formattedMessage);
+  if (!finalMessageSent) {
+    progress += 100 / totalSteps;
+    const clampedProgress = Math.min(progress, 99);
+    if (win) win.webContents.send('install-progress', clampedProgress, formattedMessage);
+  } else {
+    if (win) win.webContents.send('install-progress', 100, formattedMessage);
+  }
 };
 
 const sendError = (win, error) => {
@@ -70,14 +75,19 @@ const moveContent = async (win, sourceDir, targetDir) => {
 };
 
 const configureAllServices = (win) => new Promise((resolve, reject) => {
-  sendProgress(win, 'Démarrage de la configuration des services...');
-  exec(`node "${path.join(__dirname, 'configure-services.js')}"`, (error) => {
-    if (error) {
-      sendError(win, error);
-      reject(error);
-    } else {
+  sendProgress(win, 'Configuration des services en cours...');
+  const proc = spawn('node', [path.join(__dirname, 'configure-services.js')], { stdio: 'pipe', windowsHide: true });
+  proc.stdout.on('data', (data) => sendProgress(win, data.toString().trim()));
+  proc.stderr.on('data', (data) => sendProgress(win, `Erreur: ${data.toString().trim()}`));
+  proc.on('error', (error) => { sendError(win, error); reject(error); });
+  proc.on('exit', (code) => {
+    if (code === 0) {
       sendProgress(win, 'Configuration des services terminée');
       resolve();
+    } else {
+      const err = new Error(`Configuration échouée avec code ${code}`);
+      sendError(win, err);
+      reject(err);
     }
   });
 });
@@ -88,6 +98,7 @@ const installService = async (win, { name, url, zipName, nestedDirPattern }) => 
   await downloadFile(win, url, zipPath);
   extractZip(win, zipPath, extractPath);
   await fsPromises.unlink(zipPath);
+
   if (nestedDirPattern) {
     const items = await fsPromises.readdir(extractPath);
     let nestedDir = null;
@@ -108,7 +119,7 @@ const installService = async (win, { name, url, zipName, nestedDirPattern }) => 
       sendProgress(win, `Répertoire imbriqué trouvé : ${nestedDir}`);
       await moveContent(win, nestedDir, extractPath);
     } else {
-      sendProgress(win, `Aucun répertoire correspondant à ${nestedDirPattern} trouvé dans ${extractPath}, saut du déplacement`);
+      sendProgress(win, `Aucun répertoire correspondant à ${nestedDirPattern} trouvé dans ${extractPath}`);
       sendProgress(win, `Contenu de ${extractPath}: ${items.join(', ')}`);
     }
   }
@@ -117,14 +128,13 @@ const installService = async (win, { name, url, zipName, nestedDirPattern }) => 
 const downloadServices = async (win) => {
   try {
     progress = 0;
+    finalMessageSent = false;
     for (const service of services) {
       await installService(win, service);
     }
     await configureAllServices(win);
-    if (progress < 100) {
-      progress = 100;
-      sendProgress(win, 'Installation terminée avec succès.');
-    }
+    finalMessageSent = true;
+    sendProgress(win, 'Installation terminée avec succès.');
   } catch (error) {
     sendError(win, error);
   }

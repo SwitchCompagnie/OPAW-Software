@@ -70,7 +70,11 @@ window.electron.receive('install-progress', (progress, message) => {
   const progressText = document.getElementById('progress-text');
   const statusContainer = document.getElementById('status-container');
   progressBar.style.width = `${Math.min(progress, 100)}%`;
-  progressText.textContent = progress < 100 ? `Installation en cours... ${Math.round(progress)}%` : 'Installation terminée !';
+  if (progress >= 100 && message.includes('Installation terminée avec succès')) {
+    progressText.textContent = 'Installation terminée !';
+  } else {
+    progressText.textContent = `Installation en cours... ${Math.round(progress)}%`;
+  }
   statusContainer.innerHTML += `<p>[${new Date().toLocaleTimeString()}] ${message}</p>`;
   statusContainer.scrollTop = statusContainer.scrollHeight;
 });

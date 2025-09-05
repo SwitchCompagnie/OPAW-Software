@@ -1,7 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { spawn, execSync } = require('child_process');
-
 const baseDir = path.join(__dirname, '..');
 
 const grantPermissions = (targetPath) => {
@@ -23,7 +22,6 @@ const setupMariaDB = async () => {
   }
   await fs.mkdir(data, { recursive: true });
   grantPermissions(data);
-
   execSync(`"${install}" --datadir="${data}"`, { stdio: 'inherit' });
 
   const server = spawn(mysqld, ['--console', `--datadir=${data}`, '--skip-grant-tables'], { stdio: 'pipe', detached: true });
@@ -63,13 +61,11 @@ const configureApacheAndPHP = async () => {
     Require all granted
 </Directory>
 Alias /phpmyadmin "${phpMyAdmin.replace(/\\/g, '/')}"
-
 <Directory "${phpMyAdmin.replace(/\\/g, '/')}">
     Options Indexes FollowSymLinks
     AllowOverride All
     Require all granted
 </Directory>
-
 LoadModule php_module "${phpPath.replace(/\\/g, '/')}/php8apache2_4.dll"
 AddHandler application/x-httpd-php .php
 PHPIniDir "${phpPath.replace(/\\/g, '/')}"
@@ -81,6 +77,7 @@ DirectoryIndex index.php index.html
   if (!(await fs.access(phpIni).then(() => true).catch(() => false)) && await fs.access(phpIniDev).then(() => true).catch(() => false)) {
     await fs.copyFile(phpIniDev, phpIni);
   }
+
   if (await fs.access(phpIni).then(() => true).catch(() => false)) {
     let ini = await fs.readFile(phpIni, 'utf-8');
     ['zip', 'mbstring', 'curl', 'gd', 'openssl', 'mysqli'].forEach(ext =>
