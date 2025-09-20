@@ -5,13 +5,26 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "download": "node bin/download-services.js"
+    "download": "node bin/download-services.js",
+    "build": "electron-builder --win portable"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
-    "axios": "^1.7.7",
-    "electron": "^38.0.0"
+    "axios": "^1.7.7"
+  },
+  "devDependencies": {
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12"
   },
   "author": "Auteur",
-  "license": "MIT"
+  "license": "MIT",
+  "build": {
+    "appId": "com.opaw.server",
+    "productName": "OPAW Server",
+    "win": {
+      "target": "portable",
+      "requestedExecutionLevel": "requireAdministrator",
+      "icon": "build/icon.ico"
+    }
+  }
 }

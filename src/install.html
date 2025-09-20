@@ -1,47 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T-Tron - OPAW - Installation</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://kit.fontawesome.com/7b481d966b.js" crossorigin="anonymous"></script>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <link rel="stylesheet" href="css/app.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>T-Tron - OPAW - Installation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/7b481d966b.js" crossorigin="anonymous"></script>
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="bg-gray-950 text-gray-200 flex flex-col min-h-screen font-sans">
-    <header class="fixed top-0 left-0 w-full bg-gray-900 border-b border-gray-600 p-4 shadow-xl z-10">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <img src="images/logo.png" alt="T-Tron Icon" class="h-10 w-10 animate-spin-slow" />
-                <span class="text-2xl font-semibold text-white">T-Tron</span>
-            </div>
-            <div class="text-2xl font-semibold text-white">OPAW</div>
+  <header class="fixed top-0 left-0 w-full bg-gray-900 border-b border-gray-600 p-4 shadow-xl z-10">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <img src="images/logo.png" alt="T-Tron Icon" class="h-10 w-10 animate-spin-slow">
+        <span class="text-2xl font-semibold text-white">T-Tron</span>
+      </div>
+      <div class="text-2xl font-semibold text-white">OPAW</div>
+    </div>
+  </header>
+
+  <main class="flex-grow flex flex-col items-center justify-center pt-24 pb-8">
+    <h1 class="text-4xl font-bold text-white mb-6 text-center">Installation du Serveur Web</h1>
+    <p class="text-center text-lg text-gray-300 mb-6 max-w-xl">
+      L'installation des modules est en cours.<br>Veuillez patienter pendant le téléchargement et la configuration des services.
+    </p>
+    <div class="w-full max-w-md bg-gray-900 border border-gray-600 rounded-lg p-6 shadow-lg">
+      <div class="mb-4">
+        <div class="w-full bg-gray-700 rounded-full h-4">
+          <div id="progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width:0"></div>
         </div>
-    </header>
-    <main class="flex-grow flex flex-col items-center justify-center pt-24 pb-8">
-        <h1 class="text-4xl font-bold text-white mb-6 text-center">Installation du Serveur Web</h1>
-        <p class="text-center text-lg text-gray-300 mb-6 max-w-xl">
-            L'installation des modules est en cours. Veuillez patienter pendant le téléchargement et la configuration des services.
-        </p>
-        <div class="w-full max-w-md bg-gray-900 border border-gray-600 rounded-lg p-6 shadow-lg">
-            <div class="mb-4">
-                <div class="w-full bg-gray-700 rounded-full h-4">
-                    <div id="progress-bar" class="bg-blue-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
-                </div>
-                <p id="progress-text" class="text-center text-sm text-gray-400 mt-2">Initialisation...</p>
-            </div>
-            <div id="status-container" class="text-sm text-gray-300 h-24 overflow-y-auto"></div>
-        </div>
-        <div class="mt-6 flex items-center justify-center">
-            <div class="pulse bg-yellow-500 rounded-full h-6 w-6"></div>
-        </div>
-    </main>
-    <footer class="w-full bg-gray-900 border-t border-gray-600 shadow-lg p-4">
-        <div class="max-w-6xl mx-auto text-center">
-            <p class="text-gray-400">© SwitchCompagnie 2023-2025</p>
-        </div>
-    </footer>
-    <script src="renderer.js"></script>
+        <p id="progress-text" class="text-center text-sm text-gray-400 mt-2">Initialisation…</p>
+      </div>
+      <div id="status-container" class="text-sm text-gray-300 h-24 overflow-y-auto"></div>
+    </div>
+    <div class="mt-6 flex items-center justify-center">
+      <div class="pulse bg-yellow-500 rounded-full h-6 w-6"></div>
+    </div>
+  </main>
+
+  <footer class="w-full bg-gray-900 border-t border-gray-600 shadow-lg p-4">
+    <div class="max-w-6xl mx-auto text-center">
+      <p class="text-gray-400">SwitchCompagnie 2023-2025</p>
+    </div>
+  </footer>
+  <script src="renderer.js"></script>
 </body>
 </html>
