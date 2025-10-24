@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres - OPAW Server</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+        .setting-item {
+            transition: all 0.3s ease;
+        }
+        .setting-item:hover {
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+    <div class="container mx-auto p-6">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold mb-2">
+                <i class="fas fa-cog mr-3"></i>Paramètres
+            </h1>
+            <p class="text-gray-400">Configurez votre serveur OPAW</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-700 mb-6">
+            <button class="tab-btn px-6 py-3 border-b-2 border-blue-500 text-blue-500" data-tab="general">
+                <i class="fas fa-sliders-h mr-2"></i>Général
+            </button>
+            <button class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-400 hover:text-white" data-tab="services">
+                <i class="fas fa-server mr-2"></i>Services
+            </button>
+            <button class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-400 hover:text-white" data-tab="backups">
+                <i class="fas fa-database mr-2"></i>Sauvegardes
+            </button>
+            <button class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-400 hover:text-white" data-tab="advanced">
+                <i class="fas fa-wrench mr-2"></i>Avancé
+            </button>
+        </div>
+
+        <!-- General Tab -->
+        <div id="general-tab" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6 mb-4 setting-item">
+                <h3 class="text-xl font-bold mb-4">Interface</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Minimiser dans la barre système</label>
+                            <p class="text-sm text-gray-400">L'application sera accessible depuis l'icône de la barre des tâches</p>
+                        </div>
+                        <input type="checkbox" id="minimizeToTray" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Démarrer minimisé</label>
+                            <p class="text-sm text-gray-400">L'application démarre directement dans la barre système</p>
+                        </div>
+                        <input type="checkbox" id="startMinimized" class="w-6 h-6">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 setting-item">
+                <h3 class="text-xl font-bold mb-4">Logs</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Nombre de lignes affichées</label>
+                            <p class="text-sm text-gray-400">Nombre maximum de lignes de logs à afficher</p>
+                        </div>
+                        <input type="number" id="maxLogLines" class="bg-gray-700 px-4 py-2 rounded w-24" min="10" max="1000" value="100">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Actualisation automatique</label>
+                            <p class="text-sm text-gray-400">Les logs se rafraîchissent automatiquement</p>
+                        </div>
+                        <input type="checkbox" id="autoRefresh" class="w-6 h-6">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Tab -->
+        <div id="services-tab" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6 mb-4 setting-item">
+                <h3 class="text-xl font-bold mb-4">Apache</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Démarrage automatique</label>
+                            <p class="text-sm text-gray-400">Apache démarre automatiquement avec l'application</p>
+                        </div>
+                        <input type="checkbox" id="apacheAutoStart" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Redémarrage automatique</label>
+                            <p class="text-sm text-gray-400">Redémarre Apache automatiquement en cas de crash</p>
+                        </div>
+                        <input type="checkbox" id="apacheAutoRestart" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Port</label>
+                            <p class="text-sm text-gray-400">Port du serveur Apache</p>
+                        </div>
+                        <input type="number" id="apachePort" class="bg-gray-700 px-4 py-2 rounded w-24" min="1" max="65535" value="80">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 mb-4 setting-item">
+                <h3 class="text-xl font-bold mb-4">MariaDB</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Démarrage automatique</label>
+                            <p class="text-sm text-gray-400">MariaDB démarre automatiquement avec l'application</p>
+                        </div>
+                        <input type="checkbox" id="mariadbAutoStart" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Redémarrage automatique</label>
+                            <p class="text-sm text-gray-400">Redémarre MariaDB automatiquement en cas de crash</p>
+                        </div>
+                        <input type="checkbox" id="mariadbAutoRestart" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Port</label>
+                            <p class="text-sm text-gray-400">Port du serveur MariaDB</p>
+                        </div>
+                        <input type="number" id="mariadbPort" class="bg-gray-700 px-4 py-2 rounded w-24" min="1" max="65535" value="3306">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Mot de passe root</label>
+                            <p class="text-sm text-gray-400 text-red-400">Changera au prochain démarrage de MariaDB</p>
+                        </div>
+                        <input type="password" id="mariadbPassword" class="bg-gray-700 px-4 py-2 rounded flex-1 ml-4" readonly>
+                        <button onclick="togglePassword()" class="ml-2 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backups Tab -->
+        <div id="backups-tab" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6 mb-4 setting-item">
+                <h3 class="text-xl font-bold mb-4">Configuration des sauvegardes</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Sauvegarde automatique</label>
+                            <p class="text-sm text-gray-400">Créer des sauvegardes automatiques régulières</p>
+                        </div>
+                        <input type="checkbox" id="autoBackup" class="w-6 h-6">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Nombre maximum de sauvegardes</label>
+                            <p class="text-sm text-gray-400">Les anciennes sauvegardes seront supprimées</p>
+                        </div>
+                        <input type="number" id="maxBackups" class="bg-gray-700 px-4 py-2 rounded w-24" min="1" max="100" value="10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 setting-item">
+                <h3 class="text-xl font-bold mb-4">Sauvegardes disponibles</h3>
+                <div id="backupsList" class="space-y-2">
+                    <p class="text-gray-400">Chargement...</p>
+                </div>
+                <button onclick="createBackup()" class="mt-4 px-6 py-3 bg-green-600 rounded hover:bg-green-700 w-full">
+                    <i class="fas fa-save mr-2"></i>Créer une nouvelle sauvegarde
+                </button>
+            </div>
+        </div>
+
+        <!-- Advanced Tab -->
+        <div id="advanced-tab" class="tab-content hidden">
+            <div class="bg-gray-800 rounded-lg p-6 mb-4 setting-item">
+                <h3 class="text-xl font-bold mb-4">PHP</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Taille max d'upload</label>
+                            <p class="text-sm text-gray-400">Taille maximale des fichiers uploadés</p>
+                        </div>
+                        <input type="text" id="maxUploadSize" class="bg-gray-700 px-4 py-2 rounded w-32" value="128M">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="font-semibold">Limite de mémoire</label>
+                            <p class="text-sm text-gray-400">Mémoire maximale allouée à PHP</p>
+                        </div>
+                        <input type="text" id="memoryLimit" class="bg-gray-700 px-4 py-2 rounded w-32" value="256M">
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 setting-item">
+                <h3 class="text-xl font-bold mb-4">Informations système</h3>
+                <div id="pathsInfo" class="space-y-2 text-sm">
+                    <p class="text-gray-400">Chargement...</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 mt-4 setting-item">
+                <h3 class="text-xl font-bold mb-4 text-red-500">Zone de danger</h3>
+                <button onclick="resetConfig()" class="px-6 py-3 bg-red-600 rounded hover:bg-red-700 w-full">
+                    <i class="fas fa-undo mr-2"></i>Réinitialiser tous les paramètres
+                </button>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="mt-8 flex gap-4">
+            <button onclick="saveSettings()" class="flex-1 px-6 py-3 bg-blue-600 rounded hover:bg-blue-700">
+                <i class="fas fa-save mr-2"></i>Enregistrer
+            </button>
+            <button onclick="window.close()" class="px-6 py-3 bg-gray-700 rounded hover:bg-gray-600">
+                Annuler
+            </button>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" class="mt-4 hidden p-4 rounded"></div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>
