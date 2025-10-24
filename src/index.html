@@ -14,43 +14,148 @@
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <img src="images/logo.png" alt="T-Tron Icon" class="h-10 w-10 animate-spin-slow" />
-                <span class="text-2xl font-semibold text-white">T-Tron</span>
+                <span class="text-2xl font-semibold text-white">T-Tron OPAW</span>
+                <span class="text-sm px-2 py-1 bg-blue-600 rounded text-white">v2.0.0</span>
             </div>
-            <div class="text-2xl font-semibold text-white">OPAW</div>
-            <div class="flex space-x-4">
-                <a href="http://localhost" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 border border-gray-500">Accueil</a>
+            <div class="flex space-x-2">
+                <button id="open-localhost" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">
+                    <i class="fas fa-home mr-2"></i>Localhost
+                </button>
+                <button id="open-phpmyadmin" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">
+                    <i class="fas fa-database mr-2"></i>phpMyAdmin
+                </button>
+                <button id="open-backup" class="bg-green-600 hover:bg-green-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">
+                    <i class="fas fa-save mr-2"></i>Backup
+                </button>
+                <button id="open-settings" class="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">
+                    <i class="fas fa-cog mr-2"></i>Paramètres
+                </button>
             </div>
         </div>
     </header>
     <main class="flex-grow flex flex-col items-center justify-center pt-24 pb-8">
         <h1 class="text-4xl font-bold text-white mb-8">Panneau de Contrôle</h1>
+
+        <!-- Info Banner -->
+        <div id="info-banner" class="w-full max-w-3xl mb-4 bg-blue-900 border border-blue-700 rounded-lg p-4 hidden">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-info-circle text-blue-400 text-xl"></i>
+                    <span id="info-text" class="text-white"></span>
+                </div>
+                <button onclick="document.getElementById('info-banner').classList.add('hidden')" class="text-blue-400 hover:text-blue-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Services Control -->
+        <div class="w-full max-w-3xl bg-gray-900 border border-gray-600 rounded-lg shadow-lg p-6 mb-4">
+            <!-- Apache -->
+            <div class="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-server text-2xl text-blue-400"></i>
+                        <div>
+                            <span class="text-lg font-medium text-white">Apache Web Server</span>
+                            <p class="text-sm text-gray-400">Port 80 - Serveur HTTP</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span id="apache-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">
+                            <i class="fas fa-circle mr-1"></i>Checking...
+                        </span>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="toggle-apache" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-play mr-2"></i><span id="apache-btn-text">Démarrer</span>
+                    </button>
+                    <button id="restart-apache" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-redo mr-2"></i>Redémarrer
+                    </button>
+                    <button id="logs-apache" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-file-alt mr-2"></i>Logs
+                    </button>
+                </div>
+            </div>
+
+            <!-- MariaDB -->
+            <div class="p-4 bg-gray-800 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-4">
+                        <i class="fas fa-database text-2xl text-green-400"></i>
+                        <div>
+                            <span class="text-lg font-medium text-white">MariaDB Server</span>
+                            <p class="text-sm text-gray-400">Port 3306 - Base de données MySQL</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span id="mariadb-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">
+                            <i class="fas fa-circle mr-1"></i>Checking...
+                        </span>
+                    </div>
+                </div>
+                <div class="flex space-x-2 mb-3">
+                    <button id="toggle-mariadb" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-play mr-2"></i><span id="mariadb-btn-text">Démarrer</span>
+                    </button>
+                    <button id="restart-mariadb" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-redo mr-2"></i>Redémarrer
+                    </button>
+                    <button id="logs-mariadb" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        <i class="fas fa-file-alt mr-2"></i>Logs
+                    </button>
+                </div>
+                <div class="bg-gray-900 p-3 rounded">
+                    <p class="text-sm text-gray-400">
+                        <i class="fas fa-key mr-2 text-yellow-400"></i>
+                        <strong>Mot de passe:</strong> <span id="db-password" class="font-mono text-white">Chargement...</span>
+                        <button id="copy-password" class="ml-2 text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="w-full max-w-3xl bg-gray-900 border border-gray-600 rounded-lg shadow-lg p-6 mb-4">
+            <h2 class="text-xl font-semibold text-white mb-4">
+                <i class="fas fa-bolt mr-2 text-yellow-400"></i>Actions Rapides
+            </h2>
+            <div class="grid grid-cols-3 gap-3">
+                <button id="open-htdocs" class="bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-lg transition duration-200 border border-gray-600">
+                    <i class="fas fa-folder-open text-2xl mb-2 text-blue-400"></i>
+                    <p class="text-sm">Ouvrir htdocs</p>
+                </button>
+                <button id="view-app-logs" class="bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-lg transition duration-200 border border-gray-600">
+                    <i class="fas fa-scroll text-2xl mb-2 text-purple-400"></i>
+                    <p class="text-sm">Logs Application</p>
+                </button>
+                <button id="refresh-status" class="bg-gray-800 hover:bg-gray-700 text-white p-4 rounded-lg transition duration-200 border border-gray-600">
+                    <i class="fas fa-sync text-2xl mb-2 text-green-400"></i>
+                    <p class="text-sm">Rafraîchir Status</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Logs Container -->
         <div class="w-full max-w-3xl bg-gray-900 border border-gray-600 rounded-lg shadow-lg p-6">
-            <div class="mb-6 flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <span class="text-lg font-medium text-white">Apache</span>
-                    <span id="apache-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">Checking...</span>
-                </div>
-                <div class="flex space-x-2">
-                    <button id="toggle-apache" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Démarrer Apache</button>
-                    <button id="restart-apache" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Redémarrer</button>
-                    <button id="logs-apache" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Logs</button>
-                </div>
-            </div>
-            <div class="mb-6 flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <span class="text-lg font-medium text-white">MariaDB</span>
-                    <span id="mariadb-status" class="text-sm px-3 py-1 rounded-full bg-gray-700 text-gray-300">Checking...</span>
-                </div>
-                <div class="flex space-x-2">
-                    <button id="toggle-mariadb" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Démarrer MariaDB</button>
-                    <button id="restart-mariadb" class="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Redémarrer</button>
-                    <button id="logs-mariadb" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 border border-gray-500">Logs</button>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-white">
+                    <i class="fas fa-terminal mr-2 text-green-400"></i>Logs des Services
+                </h2>
+                <div class="flex gap-2">
+                    <button id="clear-logs" class="text-sm px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-white">
+                        <i class="fas fa-trash mr-1"></i>Effacer
+                    </button>
+                    <button id="auto-scroll" class="text-sm px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-white">
+                        <i class="fas fa-arrow-down mr-1"></i>Auto-scroll
+                    </button>
                 </div>
             </div>
-            <div class="mt-8">
-                <h2 class="text-xl font-semibold text-white mb-4">Logs des Services</h2>
-                <div id="logs-container" class="bg-gray-800 border border-gray-600 rounded-lg p-4 h-48 overflow-y-auto text-sm text-gray-300"></div>
-            </div>
+            <div id="logs-container" class="bg-gray-800 border border-gray-600 rounded-lg p-4 h-64 overflow-y-auto text-sm text-gray-300 font-mono"></div>
         </div>
     </main>
     <footer class="w-full bg-gray-900 border-t border-gray-600 shadow-lg p-4">

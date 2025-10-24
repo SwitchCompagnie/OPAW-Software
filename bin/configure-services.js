@@ -1,7 +1,26 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { spawn, execSync } = require('child_process');
+const { app } = require('electron').remote || { app: null };
+
+// Determine base directory
 const baseDir = path.join(__dirname, '..');
+
+// Load configuration
+async function loadConfig() {
+  try {
+    const configPath = path.join(require('electron').app.getPath('userData'), 'config.json');
+    const data = await fs.readFile(configPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // Return defaults if config doesn't exist
+    return {
+      mariadb: {
+        password: require('crypto').randomBytes(16).toString('hex')
+      }
+    };
+  }
+}
 
 const grantPermissions = (targetPath) => {
   const user = process.env.USERNAME;
@@ -10,7 +29,7 @@ const grantPermissions = (targetPath) => {
   execSync(`icacls "${targetPath}" /grant SYSTEM:(OI)(CI)F /T`, { stdio: 'inherit' });
 };
 
-const setupMariaDB = async () => {
+const setupMariaDB = async (password) => {
   const bin = path.join(baseDir, 'mariadb', 'bin');
   const mysqld = path.join(bin, 'mysqld.exe');
   const mysql = path.join(bin, 'mysql.exe');
@@ -29,7 +48,7 @@ const setupMariaDB = async () => {
   await new Promise(resolve => setTimeout(resolve, 5000));
 
   try {
-    execSync(`"${mysql}" -u root -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY '225874120022587412';"`, { stdio: 'inherit' });
+    execSync(`"${mysql}" -u root -e "FLUSH PRIVILEGES; ALTER USER 'root'@'localhost' IDENTIFIED BY '${password}';"`, { stdio: 'inherit' });
   } finally {
     server.kill('SIGTERM');
     await new Promise(resolve => setTimeout(resolve, 3000));
@@ -114,9 +133,17 @@ const configurePhpMyAdmin = async () => {
 };
 
 const main = async () => {
+  const config = await loadConfig();
+  const password = config.mariadb?.password || '225874120022587412';
+
+  console.log('Configuring services...');
   await configureApacheAndPHP();
-  await setupMariaDB();
+  await setupMariaDB(password);
   await configurePhpMyAdmin();
+  console.log('Configuration complete!');
 };
 
-main().catch(err => console.error(`Critical error: ${err.message}`));
+main().catch(err => {
+  console.error(`Critical error: ${err.message}`);
+  process.exit(1);
+});

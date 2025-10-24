@@ -1,13 +1,25 @@
 {
   "name": "opaw-server",
-  "version": "1.0.2",
-  "description": "Electron app to manage Apache, PHP, MariaDB and phpMyAdmin",
+  "version": "2.0.0",
+  "description": "Serveur de développement local professionnel avec Apache, PHP, MariaDB et phpMyAdmin - Optimisé avec gestion avancée des services, sauvegardes automatiques, et interface système tray",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron . --dev",
     "download": "node bin/download-services.js",
-    "build": "electron-builder --win portable"
+    "build": "electron-builder --win portable",
+    "build:all": "electron-builder --win --x64"
   },
+  "keywords": [
+    "apache",
+    "php",
+    "mariadb",
+    "phpmyadmin",
+    "web-server",
+    "local-development",
+    "electron",
+    "windows"
+  ],
   "dependencies": {
     "adm-zip": "^0.5.16",
     "axios": "^1.7.7"
@@ -16,8 +28,12 @@
     "electron": "^38.0.0",
     "electron-builder": "^26.0.12"
   },
-  "author": "Auteur",
+  "author": "SwitchCompagnie",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SwitchCompagnie/OPAW-Software.git"
+  },
   "build": {
     "appId": "com.opaw.server",
     "productName": "OPAW Server",
@@ -25,6 +41,13 @@
       "target": "portable",
       "requestedExecutionLevel": "requireAdministrator",
       "icon": "build/icon.ico"
-    }
+    },
+    "files": [
+      "src/**/*",
+      "bin/**/*",
+      "htdocs/**/*",
+      "package.json"
+    ],
+    "extraResources": []
   }
 }
