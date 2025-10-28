@@ -14,27 +14,27 @@ class InstallManager {
     this.services = [
       {
         name: 'apache',
-        url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.65-250724-Win64-VS17.zip',
+        url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-241105-Win64-VS17.zip',
         zipName: 'apache.zip',
         nestedDirPattern: /Apache24/,
         checksum: null // Could add SHA256 checksums for verification
       },
       {
         name: 'php',
-        url: 'https://downloads.php.net/~windows/releases/php-8.4.12-Win32-vs17-x64.zip',
+        url: 'https://windows.php.net/downloads/releases/php-8.3.14-Win32-vs16-x64.zip',
         zipName: 'php.zip',
         checksum: null
       },
       {
         name: 'mariadb',
-        url: 'https://archive.mariadb.org/mariadb-12.1.1/winx64-packages/mariadb-12.1.1-winx64.zip',
+        url: 'https://archive.mariadb.org/mariadb-11.6.2/winx64-packages/mariadb-11.6.2-winx64.zip',
         zipName: 'mariadb.zip',
         nestedDirPattern: /mariadb-.*-winx64/,
         checksum: null
       },
       {
         name: 'phpmyadmin',
-        url: 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip',
+        url: 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip',
         zipName: 'phpmyadmin.zip',
         nestedDirPattern: /phpMyAdmin-.*/,
         checksum: null
@@ -62,26 +62,24 @@ class InstallManager {
     this.errorCallbacks.forEach(cb => cb(error))
   }
 
-  async downloadWithRetry(url, dest, serviceName, attempt = 1) {
+  async downloadWithRetry(url, dest, serviceName, progressOffset = 0, progressRange = 100, attempt = 1) {
     try {
-      await this.downloadFile(url, dest, serviceName)
+      await this.downloadFile(url, dest, serviceName, progressOffset, progressRange)
     } catch (error) {
       if (attempt < this.retryAttempts) {
         const delay = this.retryDelay * Math.pow(2, attempt - 1)
         this.notifyProgress(
-          0,
+          Math.round(progressOffset),
           `Échec du téléchargement de ${serviceName}, nouvelle tentative ${attempt + 1}/${this.retryAttempts} dans ${delay / 1000}s...`
         )
         await new Promise(resolve => setTimeout(resolve, delay))
-        return this.downloadWithRetry(url, dest, serviceName, attempt + 1)
+        return this.downloadWithRetry(url, dest, serviceName, progressOffset, progressRange, attempt + 1)
       }
       throw error
     }
   }
 
-  async downloadFile(url, dest, serviceName) {
-    this.notifyProgress(0, `Téléchargement de ${serviceName}...`)
-
+  async downloadFile(url, dest, serviceName, progressOffset = 0, progressRange = 100) {
     const response = await axios({
       url,
       method: 'GET',
@@ -89,8 +87,9 @@ class InstallManager {
       timeout: 120000, // 2 minutes timeout
       onDownloadProgress: (progressEvent) => {
         if (progressEvent.total) {
-          const percentage = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-          this.notifyProgress(percentage, `Téléchargement de ${serviceName}: ${percentage}%`)
+          const downloadPercentage = (progressEvent.loaded * 100) / progressEvent.total
+          const actualProgress = progressOffset + (downloadPercentage * progressRange / 100)
+          this.notifyProgress(Math.round(actualProgress), `Téléchargement de ${serviceName}: ${Math.round(downloadPercentage)}%`)
         }
       }
     })
@@ -104,7 +103,7 @@ class InstallManager {
 
     return new Promise((resolve, reject) => {
       writer.on('finish', () => {
-        this.notifyProgress(100, `Téléchargement de ${serviceName} terminé`)
+        this.notifyProgress(Math.round(progressOffset + progressRange), `Téléchargement de ${serviceName} terminé`)
         resolve()
       })
       writer.on('error', reject)
@@ -127,31 +126,31 @@ class InstallManager {
     })
   }
 
-  async extractZip(source, target, serviceName) {
-    this.notifyProgress(0, `Extraction de ${serviceName}...`)
+  async extractZip(source, target, serviceName, progressOffset = 0, progressRange = 100) {
+    this.notifyProgress(Math.round(progressOffset), `Extraction de ${serviceName}...`)
 
     try {
       const zip = new AdmZip(source)
       zip.extractAllTo(target, true)
-      this.notifyProgress(100, `Extraction de ${serviceName} terminée`)
+      this.notifyProgress(Math.round(progressOffset + progressRange), `Extraction de ${serviceName} terminée`)
     } catch (error) {
       throw new Error(`Failed to extract ${serviceName}: ${error.message}`)
     }
   }
 
-  async moveContent(sourceDir, targetDir, serviceName) {
+  async moveContent(sourceDir, targetDir, serviceName, progressOffset = 0, progressRange = 100) {
     if (!(await fs.access(sourceDir).then(() => true).catch(() => false))) {
-      this.notifyProgress(0, `Répertoire source introuvable pour ${serviceName}`)
+      this.notifyProgress(Math.round(progressOffset + progressRange), `Répertoire source introuvable pour ${serviceName}`)
       return
     }
 
     const stat = await fs.stat(sourceDir)
     if (!stat.isDirectory()) {
-      this.notifyProgress(0, `Chemin invalide pour ${serviceName}`)
+      this.notifyProgress(Math.round(progressOffset + progressRange), `Chemin invalide pour ${serviceName}`)
       return
     }
 
-    this.notifyProgress(0, `Organisation des fichiers de ${serviceName}...`)
+    this.notifyProgress(Math.round(progressOffset), `Organisation des fichiers de ${serviceName}...`)
 
     const items = await fs.readdir(sourceDir)
     for (const item of items) {
@@ -166,7 +165,7 @@ class InstallManager {
     }
 
     await fs.rm(sourceDir, { recursive: true, force: true })
-    this.notifyProgress(100, `Organisation des fichiers de ${serviceName} terminée`)
+    this.notifyProgress(Math.round(progressOffset + progressRange), `Organisation des fichiers de ${serviceName} terminée`)
   }
 
   async installService(service, totalServices, currentIndex) {
@@ -174,38 +173,51 @@ class InstallManager {
     const zipPath = path.join(this.baseDir, '..', zipName)
     const extractPath = path.join(this.baseDir, name)
 
-    const baseProgress = (currentIndex / totalServices) * 100
-    const serviceProgress = 100 / totalServices
+    // Calculate progress ranges for this service
+    // Services installation takes 90% of total progress (0-90%)
+    const totalServicesProgress = 90
+    const baseProgress = (currentIndex / totalServices) * totalServicesProgress
+    const serviceProgress = totalServicesProgress / totalServices
+    
+    // Allocate progress ranges for different phases:
+    // Download: 70% of service progress
+    // Extract: 20% of service progress
+    // Move content: 10% of service progress
+    const downloadRange = serviceProgress * 0.7
+    const extractRange = serviceProgress * 0.2
+    const moveRange = serviceProgress * 0.1
 
     try {
       // Check if already exists
       if (await fs.access(extractPath).then(() => true).catch(() => false)) {
         this.notifyProgress(
-          baseProgress + serviceProgress,
+          Math.round(baseProgress + serviceProgress),
           `${name} déjà installé, passage au suivant...`
         )
         return
       }
 
-      // Download
-      await this.downloadWithRetry(url, zipPath, name)
+      // Download with progress offset
+      await this.downloadWithRetry(url, zipPath, name, baseProgress, downloadRange)
 
       // Verify checksum if provided
       if (checksum) {
-        this.notifyProgress(baseProgress + serviceProgress * 0.6, `Vérification de ${name}...`)
+        const checksumProgress = baseProgress + downloadRange
+        this.notifyProgress(Math.round(checksumProgress), `Vérification de ${name}...`)
         const valid = await this.verifyChecksum(zipPath, checksum)
         if (!valid) {
           throw new Error(`Checksum verification failed for ${name}`)
         }
       }
 
-      // Extract
-      await this.extractZip(zipPath, extractPath, name)
+      // Extract with progress offset
+      const extractProgress = baseProgress + downloadRange
+      await this.extractZip(zipPath, extractPath, name, extractProgress, extractRange)
 
       // Cleanup zip
       await fs.unlink(zipPath).catch(() => {})
 
-      // Handle nested directories
+      // Handle nested directories with progress offset
       if (nestedDirPattern) {
         const items = await fs.readdir(extractPath)
         let nestedDir = null
@@ -224,11 +236,12 @@ class InstallManager {
         }
 
         if (nestedDir) {
-          await this.moveContent(nestedDir, extractPath, name)
+          const moveProgress = baseProgress + downloadRange + extractRange
+          await this.moveContent(nestedDir, extractPath, name, moveProgress, moveRange)
         }
       }
 
-      this.notifyProgress(baseProgress + serviceProgress, `Installation de ${name} terminée`)
+      this.notifyProgress(Math.round(baseProgress + serviceProgress), `Installation de ${name} terminée`)
     } catch (error) {
       this.notifyError(new Error(`Failed to install ${name}: ${error.message}`))
       throw error
@@ -236,7 +249,7 @@ class InstallManager {
   }
 
   async configureServices() {
-    this.notifyProgress(95, 'Configuration des services...')
+    this.notifyProgress(90, 'Configuration des services...')
 
     try {
       const { spawn } = require('child_process')
@@ -276,10 +289,12 @@ class InstallManager {
 
       const totalServices = this.services.length
 
+      // Services installation takes 90% of total progress
       for (let i = 0; i < totalServices; i++) {
         await this.installService(this.services[i], totalServices, i)
       }
 
+      // Configuration takes the last 10%
       await this.configureServices()
 
       this.notifyProgress(100, 'Installation terminée avec succès!')

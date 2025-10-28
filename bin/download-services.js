@@ -8,24 +8,24 @@ const baseDir = path.join(__dirname, '..')
 const services = [
   {
     name: 'apache',
-    url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.65-250724-Win64-VS17.zip',
+    url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-241105-Win64-VS17.zip',
     zipName: 'apache.zip',
     nestedDirPattern: /Apache24/
   },
   {
     name: 'php',
-    url: 'https://downloads.php.net/~windows/releases/php-8.4.12-Win32-vs17-x64.zip',
+    url: 'https://windows.php.net/downloads/releases/php-8.3.14-Win32-vs16-x64.zip',
     zipName: 'php.zip'
   },
   {
     name: 'mariadb',
-    url: 'https://archive.mariadb.org/mariadb-12.1.1/winx64-packages/mariadb-12.1.1-winx64.zip',
+    url: 'https://archive.mariadb.org/mariadb-11.6.2/winx64-packages/mariadb-11.6.2-winx64.zip',
     zipName: 'mariadb.zip',
     nestedDirPattern: /mariadb-.*-winx64/
   },
   {
     name: 'phpmyadmin',
-    url: 'https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip',
+    url: 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip',
     zipName: 'phpmyadmin.zip',
     nestedDirPattern: /phpMyAdmin-.*/
   }
