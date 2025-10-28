@@ -8,13 +8,13 @@ const baseDir = path.join(__dirname, '..')
 const services = [
   {
     name: 'apache',
-    url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.62-241105-Win64-VS17.zip',
+    url: 'https://www.apachelounge.com/download/VS17/binaries/httpd-2.4.65-250724-Win64-VS17.zip',
     zipName: 'apache.zip',
     nestedDirPattern: /Apache24/
   },
   {
     name: 'php',
-    url: 'https://windows.php.net/downloads/releases/php-8.3.14-Win32-vs16-x64.zip',
+    url: 'https://windows.php.net/downloads/releases/php-8.4.14-Win32-vs17-x64.zip',
     zipName: 'php.zip'
   },
   {
@@ -25,7 +25,7 @@ const services = [
   },
   {
     name: 'phpmyadmin',
-    url: 'https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip',
+    url: 'https://files.phpmyadmin.net/phpMyAdmin/5.2.3/phpMyAdmin-5.2.3-all-languages.zip',
     zipName: 'phpmyadmin.zip',
     nestedDirPattern: /phpMyAdmin-.*/
   }
