@@ -236,11 +236,14 @@ La configuration est stockée dans `%APPDATA%/opaw-server/config.json`
 
 ## 🗺️ Roadmap
 
+- [x] Ports personnalisables via UI - ✅ Implémenté dans v2.0
+- [x] System Tray integration - ✅ Implémenté dans v2.0
+- [x] Système de sauvegarde/restauration - ✅ Implémenté dans v2.0
+- [x] Auto-restart des services - ✅ Implémenté dans v2.0
 - [ ] Support de Node.js intégré
 - [ ] Support de Redis
 - [ ] Gestionnaire de projets multiples
 - [ ] Support SSL/HTTPS
-- [ ] Ports personnalisables via UI
 - [ ] Support de bases multiples
 - [ ] Import/Export de projets
 - [ ] Thèmes personnalisables
